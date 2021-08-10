@@ -1,0 +1,75 @@
+_navy()
+{
+  local cur prev words cword
+  COMPREPLY=()
+  cur="${COMP_WORDS[COMP_CWORD]}"
+  prev="${COMP_WORDS[COMP_CWORD-1]}"
+  words=("${COMP_WORDS[@]}")
+  cword="$COMP_CWORD"
+
+  local OPTIONS='
+    -V --version
+    -h --help
+    -e
+  '
+
+  local COMMANDS=(
+    "import" "launch" "destroy" "delete"
+    "ps"
+    "start" "stop" "restart" "kill"
+    "rm"
+    "update" "updates"
+    "logs"
+    "health" "wait-for-healthy"
+    "use-tag" "reset-tag"
+    "use-port" "url" "open" "port"
+    "available-services"
+    "develop" "live" "run"
+    "refresh-config"
+    "status"
+    "doctor"
+    "config"
+    "external-ip" "use-lan-ip" "use-local-ip"
+    "help")
+
+  if [[ "$cur" == -* ]] ; then
+    COMPREPLY=( $(compgen -W '${OPTIONS}' -- $cur) )
+    return 0
+  fi
+
+  if [[ "$prev" = "-e" ]] ; then
+    COMPREPLY=( $( \
+      compgen -W '$(navy status | tail -n +2 | cut -d" " -f1)' -- $cur) )
+    return 0
+  fi
+
+  local command
+  for word in "${words[@]}"; do
+    if [[ " ${COMMANDS[@]} " =~ " $word " ]]; then
+      command=$word
+      break
+    fi
+  done
+
+  if [[ -n $command ]]; then
+    if [ -z "$_navy_services" ]; then
+      _navy_services=$(navy available-services)
+    fi
+
+    case $command in
+      launch|start|stop|restart|kill|rm|update|logs|wait-for-healthy|use-tag|reset-tag|use-port|reset-port|url|open|port|develop|live)
+        COMPREPLY=( $( \
+          compgen -W '${_navy_services}' -- $cur ) )
+        return 0
+        ;;
+    esac
+  fi
+
+  if [[ -z "$command" ]]; then
+    COMPREPLY=( $(compgen -W '${COMMANDS[@]}' -- $cur ) )
+  fi
+
+  return 0
+}
+
+complete -F _navy navy

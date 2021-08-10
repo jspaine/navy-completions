@@ -1,0 +1,99 @@
+#compdef _navy navy
+
+_navy_cache_policy_daily () {
+  typeset -a old
+
+  # cache is valid for a day
+  old=( "$1"(mh+12) )
+  (( $#old ))
+}
+
+_navy_envs () {
+  _values $@ 'envs' $(navy status | tail -n +2 | cut -d' ' -f1)
+}
+
+_navy_all_services() {
+  local update_policy
+  zstyle -s ":completion:${curcontext}:" cache-policy update_policy
+  if [[ -z "$update_policy" ]]; then
+    zstyle ":completion:${curcontext}:" cache-policy _navy_cache_policy_daily
+  fi
+
+  local cacheid=package_cache_navy_services
+  local all_services
+  if _cache_invalid "$cacheid" || ! _retrieve_cache "$cacheid"
+  then
+    all_services=("${(@f)$(navy available-services)}")
+    _store_cache "$cacheid" all_services
+  fi
+
+  _values $@ 'services' $all_services
+}
+
+_navy_commands() {
+  local -a commands
+  commands=(
+    'import'
+    'launch'
+    'destroy'
+    'delete'
+    'ps'
+    'start'
+    'stop'
+    'restart'
+    'kill'
+    'rm'
+    'update'
+    'updates'
+    'logs'
+    'health'
+    'wait-for-healthy'
+    'use-tag'
+    'reset-tag'
+    'use-port'
+    'reset-port'
+    'url'
+    'open'
+    'port'
+    'available-services'
+    'develop'
+    'live'
+    'run'
+    'refresh-config'
+    'status'
+    'doctor'
+    'config'
+    'external-ip'
+    'use-lan-ip'
+    'use-local-ip'
+    'help'
+  )
+  _values 'commands' "${commands[@]}"
+}
+
+_navy () {
+  _arguments \
+    '-e[environment]:environment:_navy_envs' \
+    ': :->cmds' \
+    '*: :->services'
+
+  case $state in
+    cmds)
+      _navy_commands
+      ;;
+    services)
+      case $line[1] in
+        (launch|start|stop|restart|kill|rm|update|logs|wait-for-healthy)
+          _navy_all_services
+          ;;
+        (use-tag|reset-tag|use-port|reset-port|url|open|port|develop|live)
+          if [[ ${#line[@]} == 2 ]]; then
+            _navy_all_services
+          fi
+          ;;
+        *)
+          ;;
+      esac
+      ;;
+  esac
+}
