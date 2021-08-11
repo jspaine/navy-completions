@@ -52,16 +52,25 @@ _navy()
   done
 
   if [[ -n $command ]]; then
-    if [ -z "$_navy_services" ]; then
-      _navy_services=$(navy available-services)
-    fi
-
     case $command in
-      launch|start|stop|restart|kill|rm|update|logs|wait-for-healthy|use-tag|reset-tag|use-port|reset-port|url|open|port|develop|live)
+      launch)
+        if [ -z "$_navy_services" ]; then
+          _navy_services=$(navy available-services)
+        fi
         COMPREPLY=( $( \
           compgen -W '${_navy_services}' -- $cur ) )
         return 0
         ;;
+      start|stop|restart|kill|rm|update|logs|wait-for-healthy|use-tag|reset-tag|use-port|reset-port|url|open|port|develop|live)
+        regexp="-e[[:space:]]+(\w+)"
+        if [[ "${words[@]}" =~ $regexp ]]; then
+          COMPREPLY=( $( \
+            compgen -W '$(navy -e ${BASH_REMATCH[1]} ps | tail -n +2 | cut -d" " -f3)' ) )
+        else
+          COMPREPLY=( $( \
+            compgen -W '$(navy ps | tail -n +2 | cut -d" " -f3)' ) )
+        fi
+        return 0
     esac
   fi
 
