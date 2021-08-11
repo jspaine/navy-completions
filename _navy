@@ -30,6 +30,14 @@ _navy_all_services() {
   _values $@ 'services' $all_services
 }
 
+_navy_active_services() {
+  if [[ ${words[@]} =~ '-e (\w+)' ]]; then
+    _values $@ 'services' $(navy -e $match[1] ps | tail -n +2 | cut -d' ' -f3)
+  else
+    _values $@ 'services' $(navy ps | tail -n +2 | cut -d' ' -f3)
+  fi
+}
+
 _navy_commands() {
   local -a commands
   commands=(
@@ -83,12 +91,15 @@ _navy () {
       ;;
     services)
       case $line[1] in
-        (launch|start|stop|restart|kill|rm|update|logs|wait-for-healthy)
+        (launch)
           _navy_all_services
+          ;;
+        (start|stop|restart|kill|rm|update|logs|wait-for-healthy)
+          _navy_active_services
           ;;
         (use-tag|reset-tag|use-port|reset-port|url|open|port|develop|live)
           if [[ ${#line[@]} == 2 ]]; then
-            _navy_all_services
+            _navy_active_services
           fi
           ;;
         *)
