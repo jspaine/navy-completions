@@ -31,8 +31,10 @@ _navy_all_services() {
 }
 
 _navy_active_services() {
-  if [[ ${words[@]} =~ '-e (\w+)' ]]; then
-    _values $@ 'services' $(navy -e $match[1] ps | tail -n +2 | cut -d' ' -f3)
+  # regex conditional doesn't work on mac os
+  local environment=$(echo "${words[@]}" | grep -oEe '-e\s+\w+' |grep -oE '[^-e\s+]\w+')
+  if [[ -n "$environment" ]]; then
+    _values $@ 'services' $(navy -e $environment ps | tail -n +2 | cut -d' ' -f3)
   else
     _values $@ 'services' $(navy ps | tail -n +2 | cut -d' ' -f3)
   fi
